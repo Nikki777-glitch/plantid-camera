@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plant ID Camera</title>
+    <title>Plant Identification Camera</title>
     <style>
- body {
+        body {
             margin: 0;
             padding: 0;
             font-family: Arial, sans-serif;
@@ -28,8 +28,8 @@
         }
         h1 {
             margin-bottom: 20px;
-            font-size: 24px;      
-       }
+            font-size: 24px;
+        }
         #videoContainer {
             width: 100%;
             margin-bottom: 20px;
@@ -62,13 +62,24 @@
         #captureBtn:hover {
             background-color: #f0f0f0;
             transform: translateY(-2px);
-           }
+        }
         #status {
             margin-top: 15px;
             padding: 10px;
             border-radius: 5px;
             background-color: rgba(255, 255, 255, 0.2);
             font-size: 14px;
+        }
+        .downloadBtn {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: white;
+            color: #4CAF50;
+            font-weight: bold;
+            border-radius: 50px;
+            text-decoration: none;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
@@ -89,26 +100,24 @@
             const captureBtn = document.getElementById('captureBtn');
             const status = document.getElementById('status');
             let stream = null;
-// Start camera
+            
+            // Start camera
             async function startCamera() {
                 try {
-                    // Check if camera API exists
                     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                        status.textContent = "Your browser doesn't support camera access";
+                        status.textContent = "Your browser doesn't support camera access.";
                         return;
                     }
-                    
-                    // Request camera access with explicit permissions
+
                     stream = await navigator.mediaDevices.getUserMedia({ 
                         video: { 
-                            facingMode: "user",
-                            width: { ideal: 1280 },
+                            facingMode: "user", 
+                            width: { ideal: 1280 }, 
                             height: { ideal: 720 }
-                        }, 
+                        },
                         audio: false 
                     });
-                    
-                    // Connect stream to video element
+
                     video.srcObject = stream;
                     status.textContent = "Camera ready! Point at a plant and take a photo.";
                 } catch (err) {
@@ -116,36 +125,72 @@
                     status.textContent = "Camera error: " + err.message + ". Please ensure camera permissions are allowed.";
                 }
             }
-            // Capture image
+
+            // Capture image and send for identification
             captureBtn.addEventListener('click', function() {
                 if (stream) {
-                    // Set canvas size
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
-                   
-                    // Draw video frame to canvas
                     const context = canvas.getContext('2d');
                     context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    
-                    // Convert to base64 image
                     const imageData = canvas.toDataURL('image/jpeg', 0.9);
-                    
-                    // Update status
-                    status.textContent = "Image captured! Ready for identification.";
-                    
-                    // Save image to local storage or send to server
+                    status.textContent = "Image captured! Preparing for identification...";
                     localStorage.setItem('capturedImage', imageData);
-                    
-                    // Optional: Create a preview of the captured image
+
+                    // Remove previous image and download button if they exist
+                    document.querySelectorAll('.container img, .downloadBtn').forEach(el => el.remove());
+
+                    // Show image preview
                     const img = document.createElement('img');
                     img.src = imageData;
                     img.style.width = '100%';
                     img.style.borderRadius = '10px';
                     img.style.marginTop = '15px';
                     document.querySelector('.container').appendChild(img);
+
+                    // Add Download button
+                    const downloadBtn = document.createElement('a');
+                    downloadBtn.href = imageData;
+                    downloadBtn.download = 'captured-plant.jpg';
+                    downloadBtn.textContent = 'Download Image';
+                    downloadBtn.className = 'downloadBtn';
+                    document.querySelector('.container').appendChild(downloadBtn);
+
+                    // Send image to Plant.id for identification
+                    status.textContent = "Sending to Plant.id...";
+                    fetch("https://api.plant.id/v2/identify", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Api-Key": "YOUR_PLANT_ID_API_KEY_HERE" // Replace with your real API key
+                        },
+                        body: JSON.stringify({
+                            images: [imageData],
+                            modifiers: ["crops_fast", "similar_images"],
+                            plant_language: "en",
+                            plant_details: ["common_names", "url", "wiki_description"]
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.suggestions && data.suggestions.length > 0) {
+                            const plant = data.suggestions[0];
+                            const name = plant.plant_name;
+                            const prob = (plant.probability * 100).toFixed(1);
+                            const common = plant.plant_details.common_names?.join(', ') || "No common name";
+                            status.innerHTML = `🌿 <strong>${name}</strong><br>Common name: ${common}<br>Confidence: ${prob}%`;
+                        } else {
+                            status.textContent = "Sorry, I couldn’t identify the plant.";
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        status.textContent = "Error identifying plant. Please try again.";
+                    });
                 }
             });
-            // Start the camera when loaded
+
+            // Start camera on page load
             startCamera();
         });
     </script>
