@@ -1,185 +1,190 @@
-<!DOCTYPE html>
+
+ <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>My Lovely Plant App 🌱</title>
+  <title>Plant Identifier App</title>
   <style>
     body {
       margin: 0;
-      font-family: 'Segoe UI', sans-serif;
+      padding: 0;
+      font-family: Arial, sans-serif;
       background: linear-gradient(135deg, #4CAF50, #2E7D32);
+      min-height: 100vh;
       color: white;
-      text-align: center;
-      height: 100vh;
       display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-
-    .screen {
-      display: none;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 20px;
     }
 
-    .active {
-      display: flex;
-    }
-
-    .btn {
-      background-color: white;
-      color: #2E7D32;
-      border: none;
-      border-radius: 25px;
-      padding: 15px 25px;
-      margin: 10px;
-      font-size: 18px;
-      font-weight: bold;
-      cursor: pointer;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-      transition: all 0.2s ease;
-      width: 80%;
-      max-width: 300px;
-    }
-
-    .btn:hover {
-      background-color: #f0f0f0;
-      transform: scale(1.03);
-    }
-
-    video {
-      width: 100%;
-      border-radius: 10px;
-      margin-bottom: 15px;
-    }
-
-    input, textarea {
+    .container {
       width: 90%;
-      max-width: 400px;
-      padding: 10px;
-      margin: 10px auto;
-      border-radius: 10px;
-      border: none;
-      font-size: 16px;
+      max-width: 600px;
+      padding: 20px;
+      margin-top: 40px;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      text-align: center;
     }
 
-    #output {
-      background: rgba(255,255,255,0.1);
-      padding: 10px;
-      border-radius: 10px;
+    h1 {
+      font-size: 28px;
+      margin-bottom: 20px;
+    }
+
+    button, input[type="file"] {
+      padding: 12px 20px;
+      margin: 10px 5px;
+      font-size: 16px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      color: #2E7D32;
+      background-color: white;
+      font-weight: bold;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #f0f0f0;
+      transform: translateY(-2px);
+    }
+
+    video, img {
+      width: 100%;
+      border-radius: 15px;
       margin-top: 15px;
-      max-width: 400px;
-      font-size: 15px;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 10px;
+      border: none;
+      resize: none;
+      font-size: 14px;
+    }
+
+    #responseBox {
+      margin-top: 15px;
+      padding: 15px;
+      background-color: rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      min-height: 50px;
     }
   </style>
 </head>
 <body>
+  <div class="container">
+    <h1>🌿 Plant Identifier</h1>
 
-  <!-- Home Screen -->
-  <div id="home" class="screen active">
-    <h1>🌿 Welcome to Plant Helper</h1>
-    <button class="btn" onclick="showScreen('camera')">📷 Take a Plant Photo</button>
-    <button class="btn" onclick="showScreen('upload')">📁 Upload a Photo</button>
-    <button class="btn" onclick="showScreen('ask')">💬 Ask a Plant Question</button>
-    <button class="btn" onclick="showScreen('care')">🌿 Learn About Plant Care</button>
-  </div>
-
-  <!-- Camera Screen -->
-  <div id="camera" class="screen">
-    <h2>Take a Photo</h2>
     <video id="video" autoplay playsinline></video>
-    <button class="btn" onclick="capturePhoto()">📸 Capture</button>
-    <button class="btn" onclick="showScreen('home')">🔙 Back</button>
     <canvas id="canvas" style="display:none;"></canvas>
-  </div>
 
-  <!-- Upload Screen -->
-  <div id="upload" class="screen">
-    <h2>Upload a Plant Photo</h2>
-    <input type="file" accept="image/*" />
-    <button class="btn" onclick="showScreen('home')">🔙 Back</button>
-  </div>
+    <div>
+      <button id="cameraBtn">Take Photo</button>
+      <input type="file" id="uploadInput" accept="image/*">
+      <button id="careBtn">Plant Care Info</button>
+      <button id="originBtn">Plant Origin Info</button>
+    </div>
 
-  <!-- Ask a Question Screen -->
-  <div id="ask" class="screen">
-    <h2>Ask a Plant Question</h2>
-    <textarea id="question" rows="4" placeholder="Write your plant question here..."></textarea>
-    <button class="btn" onclick="askGemini()">Ask 🌼</button>
-    <div id="output"></div>
-    <button class="btn" onclick="showScreen('home')">🔙 Back</button>
-  </div>
+    <div>
+      <textarea id="questionInput" rows="3" placeholder="Ask something about your plant..."></textarea>
+      <button id="askBtn">Ask Plant AI</button>
+    </div>
 
-  <!-- Plant Care Info Screen -->
-  <div id="care" class="screen">
-    <h2>Plant Care Info</h2>
-    <p>🌱 This section will show how to care for different types of plants. (Coming soon!)</p>
-    <button class="btn" onclick="showScreen('home')">🔙 Back</button>
+    <div id="responseBox">Waiting for your question...</div>
+    <div id="status" style="margin-top: 20px;"></div>
   </div>
 
   <script>
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
-    let stream = null;
+    const cameraBtn = document.getElementById('cameraBtn');
+    const uploadInput = document.getElementById('uploadInput');
+    const questionInput = document.getElementById('questionInput');
+    const askBtn = document.getElementById('askBtn');
+    const responseBox = document.getElementById('responseBox');
+    const status = document.getElementById('status');
+    const apiKey = "BAiEwvTEDTyxERqYecByUBmjwxXhtrtgqluxMO1Ksvq07AuTrV";
 
-    function showScreen(id) {
-      document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-
-      if (id === 'camera') {
-        startCamera();
-      } else {
-        stopCamera();
-      }
-    }
-
+    // Start back-facing camera
     async function startCamera() {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { exact: "environment" } },
+          audio: false
+        });
         video.srcObject = stream;
+        status.textContent = "Camera ready!";
       } catch (err) {
-        alert("Camera error: " + err.message);
+        console.error(err);
+        status.textContent = "Could not access back camera. Try another device.";
       }
     }
 
-    function stopCamera() {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-        stream = null;
-      }
-    }
-
-    function capturePhoto() {
+    // Take photo
+    cameraBtn.onclick = () => {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0);
-      const imageData = canvas.toDataURL('image/jpeg');
-      alert("📸 Photo captured! (You can now send this to Plant.id)");
-      // Save to localStorage or send to server if needed
+      const context = canvas.getContext("2d");
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = canvas.toDataURL("image/jpeg", 0.9);
+      displayCapturedImage(imageData);
+    };
+
+    // Upload and preview image
+    uploadInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          const img = document.createElement("img");
+          img.src = event.target.result;
+          document.querySelector(".container").appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Ask a plant question
+    askBtn.addEventListener("click", async () => {
+      const question = questionInput.value.trim();
+      if (!question) {
+        responseBox.textContent = "Please enter a question!";
+        return;
+      }
+
+      responseBox.textContent = "Thinking... 🌱";
+      try {
+        const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + apiKey, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: question }] }]
+          })
+        });
+
+        const data = await res.json();
+        const answer = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        responseBox.textContent = answer || "Sorry, I couldn't find an answer!";
+      } catch (error) {
+        console.error("Gemini error:", error);
+        responseBox.textContent = "Oops! Something went wrong.";
+      }
+    });
+
+    function displayCapturedImage(dataUrl) {
+      const img = document.createElement("img");
+      img.src = dataUrl;
+      document.querySelector(".container").appendChild(img);
     }
 
-    async function askGemini() {
-      const question = document.getElementById('question').value;
-      const output = document.getElementById('output');
-      output.innerHTML = "Thinking... 🌱";
-
-      const apiKey = "YOUR_GEMINI_API_KEY"; // Replace this with your actual Gemini API key
-
-      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + apiKey, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: question }] }]
-        })
-      });
-
-      const data = await response.json();
-      output.innerHTML = data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response received.";
-    }
+    startCamera();
   </script>
 </body>
 </html>
-            
