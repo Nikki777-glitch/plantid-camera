@@ -1,190 +1,128 @@
-
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Plant Identifier App</title>
+  <title>Plant Magic App</title>
   <style>
     body {
       margin: 0;
       padding: 0;
-      font-family: Arial, sans-serif;
+      font-family: 'Arial', sans-serif;
       background: linear-gradient(135deg, #4CAF50, #2E7D32);
-      min-height: 100vh;
       color: white;
       display: flex;
       flex-direction: column;
       align-items: center;
+      min-height: 100vh;
     }
-
     .container {
-      width: 90%;
+      width: 95%;
       max-width: 600px;
-      padding: 20px;
-      margin-top: 40px;
-      background-color: rgba(255, 255, 255, 0.1);
-      border-radius: 20px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
       text-align: center;
+      padding: 20px;
     }
-
     h1 {
+      margin-top: 20px;
       font-size: 28px;
-      margin-bottom: 20px;
     }
-
     button, input[type="file"] {
       padding: 12px 20px;
-      margin: 10px 5px;
-      font-size: 16px;
+      margin: 10px;
       border: none;
-      border-radius: 50px;
-      cursor: pointer;
+      border-radius: 30px;
+      background: white;
       color: #2E7D32;
-      background-color: white;
       font-weight: bold;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
       transition: all 0.3s ease;
     }
-
     button:hover {
-      background-color: #f0f0f0;
-      transform: translateY(-2px);
+      background: #f1f1f1;
     }
-
     video, img {
       width: 100%;
-      border-radius: 15px;
       margin-top: 15px;
+      border-radius: 15px;
     }
-
-    textarea {
-      width: 100%;
+    #response, #status {
+      margin-top: 15px;
       padding: 10px;
-      margin-top: 10px;
+      background-color: rgba(255,255,255,0.2);
       border-radius: 10px;
-      border: none;
-      resize: none;
       font-size: 14px;
     }
-
-    #responseBox {
-      margin-top: 15px;
-      padding: 15px;
-      background-color: rgba(255, 255, 255, 0.2);
+    #questionInput {
+      width: 100%;
+      padding: 10px;
       border-radius: 10px;
-      min-height: 50px;
+      margin-top: 10px;
+      border: none;
+      font-size: 16px;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🌿 Plant Identifier</h1>
-
+    <h1>🌿 Plant Magic App 🌿</h1>
     <video id="video" autoplay playsinline></video>
-    <canvas id="canvas" style="display:none;"></canvas>
-
+    <canvas id="canvas" style="display: none;"></canvas>
+    
     <div>
-      <button id="cameraBtn">Take Photo</button>
-      <input type="file" id="uploadInput" accept="image/*">
-      <button id="careBtn">Plant Care Info</button>
-      <button id="originBtn">Plant Origin Info</button>
+      <button onclick="takePhoto()">📸 Take Photo</button>
+      <input type="file" id="imageUpload" accept="image/*"/>
     </div>
 
     <div>
-      <textarea id="questionInput" rows="3" placeholder="Ask something about your plant..."></textarea>
-      <button id="askBtn">Ask Plant AI</button>
+      <input type="text" id="questionInput" placeholder="Ask something about a plant..." />
+      <button onclick="askQuestion()">❓ Ask a Plant Question</button>
     </div>
 
-    <div id="responseBox">Waiting for your question...</div>
-    <div id="status" style="margin-top: 20px;"></div>
+    <div id="status">Preparing camera...</div>
+    <div id="response"></div>
   </div>
 
   <script>
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
-    const cameraBtn = document.getElementById('cameraBtn');
-    const uploadInput = document.getElementById('uploadInput');
+    const imageUpload = document.getElementById('imageUpload');
+    const responseBox = document.getElementById('response');
+    const statusBox = document.getElementById('status');
     const questionInput = document.getElementById('questionInput');
-    const askBtn = document.getElementById('askBtn');
-    const responseBox = document.getElementById('responseBox');
-    const status = document.getElementById('status');
-    const apiKey = "BAiEwvTEDTyxERqYecByUBmjwxXhtrtgqluxMO1Ksvq07AuTrV";
 
-    // Start back-facing camera
+    const plantIdKey = "YOUR_PLANT_ID_API_KEY"; // Replace this with your actual Plant.id API key
+    const geminiKey = "AIzaSyC3NMmTre08NM0e0MOe_DYzoD-6-pP2zFM";
+
     async function startCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { exact: "environment" } },
+          video: { facingMode: { exact: "environment" }},
           audio: false
         });
         video.srcObject = stream;
-        status.textContent = "Camera ready!";
+        statusBox.textContent = "Camera ready! Point at a plant and take a photo.";
       } catch (err) {
         console.error(err);
-        status.textContent = "Could not access back camera. Try another device.";
+        statusBox.textContent = "Unable to access camera: " + err.message;
       }
     }
 
-    // Take photo
-    cameraBtn.onclick = () => {
+    async function takePhoto() {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      const context = canvas.getContext("2d");
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imageData = canvas.toDataURL("image/jpeg", 0.9);
-      displayCapturedImage(imageData);
-    };
-
-    // Upload and preview image
-    uploadInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function (event) {
-          const img = document.createElement("img");
-          img.src = event.target.result;
-          document.querySelector(".container").appendChild(img);
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-
-    // Ask a plant question
-    askBtn.addEventListener("click", async () => {
-      const question = questionInput.value.trim();
-      if (!question) {
-        responseBox.textContent = "Please enter a question!";
-        return;
-      }
-
-      responseBox.textContent = "Thinking... 🌱";
-      try {
-        const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + apiKey, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: question }] }]
-          })
-        });
-
-        const data = await res.json();
-        const answer = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        responseBox.textContent = answer || "Sorry, I couldn't find an answer!";
-      } catch (error) {
-        console.error("Gemini error:", error);
-        responseBox.textContent = "Oops! Something went wrong.";
-      }
-    });
-
-    function displayCapturedImage(dataUrl) {
-      const img = document.createElement("img");
-      img.src = dataUrl;
-      document.querySelector(".container").appendChild(img);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+      const imageData = canvas.toDataURL('image/jpeg');
+      statusBox.textContent = "Analyzing photo...";
+      await identifyPlant(imageData);
     }
 
-    startCamera();
-  </script>
-</body>
-</html>
+    imageUpload.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onloadend =
+ 
+ 
