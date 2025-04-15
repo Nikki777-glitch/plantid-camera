@@ -1,24 +1,110 @@
 
-<!-- 💖 Tip Jar Donations -->
-<div style="text-align: center; margin-top: 20px;">
-  <h2>💖 Support the Fortune Teller</h2>
-  <p>Love your reading? Send a magical tip! 🧚</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ask the Fortune Teller 🔮</title>
+  <style>
+    body {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      background: linear-gradient(to bottom right, #fff0f5, #e6e6fa);
+      text-align: center;
+      padding: 2rem;
+      color: #4b0082;
+    }
 
-  <!-- Stripe Donation Button -->
-  <a href="https://buy.stripe.com/test_somestripeURL" target="_blank">
-    <button style="background-color: #635bff; color: white; padding: 10px 20px; border-radius: 12px; font-size: 16px;">
-      💎 Buy Me a Crystal Ball ($3)
-    </button>
-  </a>
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
 
-  <!-- PayPal Donation Button -->
-  <div style="margin-top: 15px;">
-    <form action="https://www.paypal.com/donate" method="post" target="_blank">
-      <input type="hidden" name="business" value="YOUR_PAYPAL_EMAIL_OR_ID" />
-      <input type="hidden" name="currency_code" value="USD" />
-      <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" 
-             border="0" name="submit" title="PayPal - The safer, easier way to pay online!" 
-             alt="Donate with PayPal button" />
-    </form>
+    textarea, input[type="text"] {
+      width: 80%;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 10px;
+      border: 2px solid #dda0dd;
+      font-size: 1.2rem;
+    }
+
+    button {
+      background-color: #ff69b4;
+      color: white;
+      border: none;
+      padding: 1rem 2rem;
+      font-size: 1.2rem;
+      border-radius: 25px;
+      cursor: pointer;
+      margin: 0.5rem;
+    }
+
+    button:hover {
+      background-color: #ff1493;
+    }
+
+    #response {
+      margin-top: 2rem;
+      font-size: 1.4rem;
+      background-color: #fff;
+      padding: 1rem;
+      border-radius: 15px;
+      border: 1px dashed #d8bfd8;
+    }
+
+    .donate {
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔮 Ask the Fortune Teller 🔮</h1>
+
+  <textarea id="question" placeholder="Ask me anything about your future..."></textarea>
+  <br>
+  <button onclick="askFortune()">Ask</button>
+
+  <div id="response"></div>
+
+  <div class="donate">
+    <h2>✨ Show Some Love ✨</h2>
+    <button onclick="window.open('https://www.buymeacoffee.com/yourlink', '_blank')">Tip Jar (Buy Me a Coffee)</button>
+    <button onclick="window.open('https://your-stripe-payment-link.com', '_blank')">Unlock Premium 💎</button>
   </div>
-</div>
+
+  <script>
+    async function askFortune() {
+      const question = document.getElementById("question").value;
+      const responseBox = document.getElementById("response");
+
+      if (!question.trim()) {
+        responseBox.innerText = "Please ask something so I can see your future ✨";
+        return;
+      }
+
+      responseBox.innerText = "Consulting the stars... 🔮";
+
+      try {
+        const reply = await fetch("https://generativelanguage.googleapis.com/v1beta2/models/chat-bison-001:generateMessage?key=AIzaSyC3NMmTre08NM0e0MOe_DYzoD-6-pP2zFM", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            prompt: {
+              messages: [{ content: question }]
+            }
+          })
+        });
+
+        const data = await reply.json();
+        const answer = data?.candidates?.[0]?.content || "Hmm... I cannot see clearly now. Try again! 🌙";
+        responseBox.innerText = answer;
+      } catch (error) {
+        responseBox.innerText = "The spirits are quiet now... Please try again later 💫";
+        console.error(error);
+      }
+    }
+  </script>
+</body>
+</html>
